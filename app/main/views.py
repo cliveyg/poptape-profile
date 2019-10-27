@@ -13,7 +13,7 @@ import time
 import datetime
 
 # reject any non-json requests
-@bp.before_request
+#@bp.before_request
 def only_json():
     if not request.is_json:
         abort(400)
@@ -52,6 +52,10 @@ def edit_profile(public_id, request):
     profile.modified = datetime_string
     if data['about_me']:
         profile.about_me = data['about_me']
+    if data['bespoke_avatar']:
+        profile.about_me = data['bespoke_avatar']
+    if data['standard_avatar']:
+        profile.about_me = data['standard_avatar']    
 
     try:
         #db.session.update(profile)
@@ -108,6 +112,64 @@ def create_profile_for_user(public_id, request):
         return jsonify({ 'message': 'oopsy, something went wrong at our end' }), 422
    
     return jsonify({ 'message': 'profile details created successfully' }), 201
+
+# -----------------------------------------------------------------------------
+
+@bp.route('/profile/avatar', methods=['POST', 'PUT'])
+@limiter.limit("10/hour")
+@require_access_level(10, request)
+def upload_avatar_for_user(public_id, request):
+
+    #TODO: data sanitization
+    data = request.get_json()    
+
+    if not data:
+        return jsonify({ 'message': 'no data supplied' }), 400
+
+    if not data.get('bespoke_avatar') and not data.get('standard_avatar'):
+        return jsonify({ 'message': 'please choose at least one type of avatar' }), 400
+
+    try:
+        profile = Profile.query.filter_by(public_id = public_id).first()
+    except (SQLAlchemyError, DBAPIError) as e:
+        app.logger.error(e)
+        return jsonify({ 'message': 'oopsy, sorry we couldn\'t complete your request' }), 502
+
+    ts = time.time()
+    datetime_string = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+
+    if not profile:
+        # new profile
+        profile = Profile(about_me = '',
+                          created = datetime_string,
+                          modified = datetime_string,
+                          public_id = public_id)
+        if data.get('bespoke_avatar'):
+            profile.standard_avatar = None
+            profile.bespoke_avatar = data.get('bespoke_avatar')
+        elif data.get('standard_avatar'):
+            profile.bespoke_avatar = None
+            profile.standard_avatar = data.get('standard_avatar')         
+        db.session.add(profile)
+    else:
+        # existing profile
+        profile.modified = datetime_string
+        if data.get('bespoke_avatar'):
+            profile.standard_avatar = None
+            profile.bespoke_avatar = data.get('bespoke_avatar')
+        elif data.get('standard_avatar'):
+            profile.bespoke_avatar = None
+            profile.standard_avatar = data.get('standard_avatar')
+
+    try:
+        db.session.flush()
+        db.session.commit()
+    except (SQLAlchemyError, DBAPIError) as e:
+        app.logger.error(e)
+        db.session.rollback()
+        return jsonify({ 'message': 'oopsy, something went wrong at our end' }), 422
+
+    return jsonify({ 'message': 'profile updated' }), 200
 
 # -----------------------------------------------------------------------------
 

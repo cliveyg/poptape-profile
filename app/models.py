@@ -12,7 +12,7 @@ class Profile(db.Model):
     __tablename__ = 'profile'
 
     public_id = db.Column(db.String(36), primary_key=True)
-    bespoke_avatar = db.Column(db.LargeBinary, nullable=True) 
+    bespoke_avatar = db.Column(db.TEXT, nullable=True) 
     standard_avatar = db.Column(db.VARCHAR(length=50), 
                                 nullable=True, 
                                 default='blank_avatar_plain')

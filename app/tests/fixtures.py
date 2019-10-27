@@ -25,21 +25,6 @@ def getAdminID():
 
 # -----------------------------------------------------------------------------
 
-def addTestCountries():
-    country1 = Country(name = "United Kingdom", iso_code = "GBR")
-    country2 = Country(name= "Germany", iso_code = "DEU")
-    country3 = Country(name= "Brazil", iso_code = "BRA")
-    country4 = Country(name= "France", iso_code = "FRA")
-    db.session.add(country1)
-    db.session.add(country2)
-    db.session.add(country3)
-    db.session.add(country4)
-    countries = [country1, country2, country3, country4]
-    db.session.commit()
-    return countries
-
-# -----------------------------------------------------------------------------
-
 def addTestAddresses():
 
     # check if countries are present and if not then add them
