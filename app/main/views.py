@@ -29,13 +29,15 @@ def system_running():
 
 # -----------------------------------------------------------------------------
 
-@bp.route('/profile', methods=['PUT'])
+@bp.route('/profile', methods=['PUT', 'POST'])
 @limiter.limit("10/hour")
 @require_access_level(10, request)
 def edit_profile(public_id, request):
 
     #TODO: data sanitization
     data = request.get_json()
+
+    new_profile = False
 
     try:
         profile = Profile.query.filter_by(public_id = public_id).first()
@@ -44,7 +46,11 @@ def edit_profile(public_id, request):
         return jsonify({ 'message': 'oopsy, sorry we couldn\'t complete your request' }), 502
 
     if not profile:
-        return jsonify({ 'message': 'Cannot find profile data for this user'}), 404
+        new_profile = True
+        profile = Profile(public_id = public_id,
+                          bespoke_avatar = None,
+                          standard_avatar = None,
+                          created  = datetime_string)
 
     ts = time.time()
     datetime_string = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
@@ -52,13 +58,12 @@ def edit_profile(public_id, request):
     profile.modified = datetime_string
     if data['about_me']:
         profile.about_me = data['about_me']
-    if data['bespoke_avatar']:
-        profile.about_me = data['bespoke_avatar']
-    if data['standard_avatar']:
-        profile.about_me = data['standard_avatar']    
+    else:
+        profile.about_me = ""
 
     try:
-        #db.session.update(profile)
+        if new_profile:
+            db.session.add(profile)
         db.session.flush()
         db.session.commit()
     except (SQLAlchemyError, DBAPIError) as e:
@@ -73,13 +78,13 @@ def edit_profile(public_id, request):
 # -----------------------------------------------------------------------------
 # creates a profile for the authenticated user
 
-@bp.route('/profile', methods=['POST'])
-@limiter.limit("10/hour")
-@require_access_level(10, request)
-def create_profile_for_user(public_id, request):
-
-    #TODO: data sanitization
-    data = request.get_json()
+#@bp.route('/profile', methods=['POST'])
+#@limiter.limit("10/hour")
+#@require_access_level(10, request)
+#def create_profile_for_user(public_id, request):
+#
+#    #TODO: data sanitization
+#    data = request.get_json()
 
 #    # check input is valid json
 #    try:
@@ -93,25 +98,25 @@ def create_profile_for_user(public_id, request):
 #
 #    except JsonValidationError as err:
 #        return jsonify({ 'message': 'Check ya inputs mate.', 'error': err.message }), 400
-    ts = time.time()
-    datetime_string = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
-
-    profile = Profile(public_id = public_id,
-                      bespoke_avatar = data.get('bespoke_avatar') or None,
-                      standard_avatar = data.get('standard_avatar') or None,
-                      about_me = data.get('about_me') or None,
-                      created  = datetime_string)
-
-    try:
-        db.session.add(profile)
-        db.session.flush()
-        db.session.commit()
-    except (SQLAlchemyError, DBAPIError) as e:
-        app.logger.error(e)
-        db.session.rollback()
-        return jsonify({ 'message': 'oopsy, something went wrong at our end' }), 422
-   
-    return jsonify({ 'message': 'profile details created successfully' }), 201
+#    ts = time.time()
+#    datetime_string = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+#
+#    profile = Profile(public_id = public_id,
+#                      bespoke_avatar = None,
+#                      standard_avatar = None,
+#                      about_me = data.get('about_me') or None,
+#                      created  = datetime_string)
+#
+#    try:
+#        db.session.add(profile)
+#        db.session.flush()
+#        db.session.commit()
+#    except (SQLAlchemyError, DBAPIError) as e:
+#        app.logger.error(e)
+#        db.session.rollback()
+#        return jsonify({ 'message': 'oopsy, something went wrong at our end' }), 422
+#   
+#    return jsonify({ 'message': 'profile details created successfully' }), 201
 
 # -----------------------------------------------------------------------------
 
@@ -229,6 +234,44 @@ def get_my_profile(public_id, request):
     profile_data['standard_avatar'] = profile.standard_avatar
     profile_data['bespoke_avatar'] = profile.bespoke_avatar
     profile_data['about_me'] = profile.about_me
+
+    return jsonify(profile_data), 200
+
+# -----------------------------------------------------------------------------
+
+@bp.route('/profile/bulk/fetch', methods=['POST'])
+@limiter.limit("100/hour")
+def get_many_profiles():
+
+    # convert to string
+    #TODO: data sanitization
+    data = request.get_json()
+
+    if not data:
+        return jsonify({ 'message': 'no data supplied' }), 400
+
+#    if not data['public_ids'] 
+#
+#    profiles = None
+#    try:
+#        profiles = db.session.query(Profile.standard_avatar,
+#                                   Profile.bespoke_avatar,
+#                                   Profile.about_me).filter(Profile.public_id == public_id)\
+#                                                    .first()
+#    except Exception as e:
+#        app.logger.info(e)
+#        return jsonify({ 'message': 'oopsy, sorry we couldn\'t complete your request' }), 502
+#
+#    if not profile:
+#        message = "no profile found for supplied id"
+#        return jsonify({ 'message': message }), 404
+#
+#    # i prefer to explicitly assign variables returned to ensure no 
+#    # accidental exposure of private data
+    profile_data = {}
+#    profile_data['standard_avatar'] = profile.standard_avatar
+#    profile_data['bespoke_avatar'] = profile.bespoke_avatar
+#    profile_data['about_me'] = profile.about_me
 
     return jsonify(profile_data), 200
 
