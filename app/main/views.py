@@ -194,7 +194,7 @@ def get_profile(public_id):
         return jsonify({ 'message': 'oopsy, sorry we couldn\'t complete your request' }), 502
 
     if not profile:
-        message = "no profile found for supplied id ["+profile_id+"]"
+        message = "no profile found for supplied id ["+public_id+"]"
         return jsonify({ 'message': message }), 404
 
     # i prefer to explicitly assign variables returned to ensure no 
