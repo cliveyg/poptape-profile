@@ -19,6 +19,7 @@
 !Dockerfile
 !docker-compose.yml
 !profile.py
+!manage.py
 !requirements.txt
 !app/__init__.py
 !app/config.py
