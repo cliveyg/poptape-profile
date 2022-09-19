@@ -11,8 +11,7 @@ services:
       - "1270:8070"
     restart: always
     volumes:
-#      - /var/log:/profile/log
-      - /Users/cliveglew/dev/logs
+      - ${LOGFILE}
     logging:
       driver: "json-file"
       options:
