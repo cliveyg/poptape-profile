@@ -3,6 +3,7 @@ from flask import Flask
 from app.extensions import db, limiter, migrate
 from app.config import Config
 from app.errors import handle_429_request, handle_wrong_method, handle_not_found
+from flask_migrate import Migrate
 
 import logging
 from logging.handlers import RotatingFileHandler
@@ -16,7 +17,8 @@ def create_app(config_class=Config):
     # register extensions
     db.init_app(app)
     limiter.init_app(app)
-    migrate.init_app(app)
+    migrate = Migrate(app, db)
+    migrate.init_app(app, db)
     
     from app.main import bp as main_bp
     app.register_blueprint(main_bp)
